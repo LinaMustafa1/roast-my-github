@@ -93,7 +93,7 @@ ${repoSummary || "No public repos found — which is honestly its own kind of ro
 Generate a sharp, funny roast of this developer. Keep it under 200 words. Be specific about their repos and language choices.`;
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
