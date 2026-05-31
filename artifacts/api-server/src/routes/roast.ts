@@ -99,7 +99,7 @@ Generate a sharp, funny roast of this developer. Keep it under 200 words. Be spe
           "Authorization": `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "meta-llama/llama-3.1-8b-instruct:free",
+          model: "openai/gpt-oss-20b:free",
           messages: [
             { role: "system", content: systemInstruction },
             { role: "user", content: userPrompt },
