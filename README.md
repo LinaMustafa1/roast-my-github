@@ -49,13 +49,19 @@ Then open http://localhost:3000
 ---
 
 ## The Prompt I Settled On
+
+```
+
 You are a comedy roast writer. Roast this GitHub user based on their repos.
 Be funny, specific, and accurate — reference their actual repo names,
 star counts, and languages. Keep it under 150 words. Style: {style}.
+
 User: {username}
 Repos: {repoList}
 Languages: {languages}
 Total stars: {totalStars}
+
+```
 
 ---
 
