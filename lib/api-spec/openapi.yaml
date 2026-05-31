@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: roast
+    description: GitHub roast operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /roast:
+    post:
+      operationId: generateRoast
+      tags: [roast]
+      summary: Roast a GitHub user
+      description: Fetches a user's public GitHub repos and generates a roast
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoastInput"
+      responses:
+        "200":
+          description: Roast generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoastResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: GitHub user not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +72,43 @@ components:
           type: string
       required:
         - status
-
+    RoastInput:
+      type: object
+      required:
+        - username
+        - style
+      properties:
+        username:
+          type: string
+          description: GitHub username to roast
+        style:
+          type: string
+          enum: [Normal, "Corporate Jargon", Pirate, Haiku]
+          description: Roast style
+    RoastResult:
+      type: object
+      required:
+        - roast
+        - username
+      properties:
+        roast:
+          type: string
+          description: The generated roast text
+        username:
+          type: string
+          description: The GitHub username that was roasted
+        repoCount:
+          type: ["integer", "null"]
+          description: Number of public repos
+        topLanguages:
+          type: array
+          items:
+            type: string
+          description: Most used programming languages
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
