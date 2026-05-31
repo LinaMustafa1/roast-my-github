@@ -73,17 +73,15 @@ router.post("/roast", async (req, res) => {
       )
       .join("\n");
 
-    const apiKey = process.env["GEMINI_API_KEY"];
+    const apiKey = process.env["GROQ_API_KEY"];
     if (!apiKey) {
-      res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
+      res.status(500).json({ error: "GROQ_API_KEY is not configured" });
       return;
     }
 
     const systemInstruction = ROAST_STYLE_PROMPTS[style] ?? ROAST_STYLE_PROMPTS["Normal"]!;
 
-    const prompt = `${systemInstruction}
-
-GitHub username: ${username}
+    const userPrompt = `GitHub username: ${username}
 Number of public repos: ${ownRepos.length}
 Top languages: ${topLanguages.join(", ") || "none"}
 
@@ -92,35 +90,40 @@ ${repoSummary || "No public repos found — which is honestly its own kind of ro
 
 Generate a sharp, funny roast of this developer. Keep it under 200 words. Be specific about their repos and language choices.`;
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    const groqRes = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 512, temperature: 1.0 },
+          model: "llama-3.1-8b-instant",
+          messages: [
+            { role: "system", content: systemInstruction },
+            { role: "user", content: userPrompt },
+          ],
+          max_tokens: 512,
+          temperature: 1.0,
         }),
       }
     );
 
-    if (!geminiRes.ok) {
-      const errBody = await geminiRes.json().catch(() => ({}));
-      req.log.error({ geminiStatus: geminiRes.status, errBody }, "Gemini API error");
-      if (geminiRes.status === 429) {
-        res.status(429).json({
-          error:
-            "Gemini API quota exceeded. Enable billing at https://aistudio.google.com or wait for the quota to reset.",
-        });
+    if (!groqRes.ok) {
+      const errBody = await groqRes.json().catch(() => ({}));
+      req.log.error({ groqStatus: groqRes.status, errBody }, "Groq API error");
+      if (groqRes.status === 429) {
+        res.status(429).json({ error: "Groq API rate limit hit. Please try again in a moment." });
         return;
       }
-      throw new Error(`Gemini returned ${geminiRes.status}`);
+      throw new Error(`Groq returned ${groqRes.status}`);
     }
 
-    const geminiData = (await geminiRes.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    const groqData = (await groqRes.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
     };
-    const roastText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "...";
+    const roastText = groqData.choices?.[0]?.message?.content ?? "...";
 
     res.json({
       roast: roastText,
