@@ -73,9 +73,9 @@ router.post("/roast", async (req, res) => {
       )
       .join("\n");
 
-    const apiKey = process.env["GROQ_API_KEY"];
+    const apiKey = process.env["OPENROUTER_API_KEY"];
     if (!apiKey) {
-      res.status(500).json({ error: "GROQ_API_KEY is not configured" });
+      res.status(500).json({ error: "OPENROUTER_API_KEY is not configured" });
       return;
     }
 
@@ -90,8 +90,8 @@ ${repoSummary || "No public repos found — which is honestly its own kind of ro
 
 Generate a sharp, funny roast of this developer. Keep it under 200 words. Be specific about their repos and language choices.`;
 
-    const groqRes = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
+    const orRes = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
@@ -99,7 +99,7 @@ Generate a sharp, funny roast of this developer. Keep it under 200 words. Be spe
           "Authorization": `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "llama-3.1-8b-instant",
+          model: "meta-llama/llama-3.1-8b-instruct:free",
           messages: [
             { role: "system", content: systemInstruction },
             { role: "user", content: userPrompt },
@@ -110,20 +110,20 @@ Generate a sharp, funny roast of this developer. Keep it under 200 words. Be spe
       }
     );
 
-    if (!groqRes.ok) {
-      const errBody = await groqRes.json().catch(() => ({}));
-      req.log.error({ groqStatus: groqRes.status, errBody }, "Groq API error");
-      if (groqRes.status === 429) {
-        res.status(429).json({ error: "Groq API rate limit hit. Please try again in a moment." });
+    if (!orRes.ok) {
+      const errBody = await orRes.json().catch(() => ({}));
+      req.log.error({ orStatus: orRes.status, errBody }, "OpenRouter API error");
+      if (orRes.status === 429) {
+        res.status(429).json({ error: "Rate limit hit. Please try again in a moment." });
         return;
       }
-      throw new Error(`Groq returned ${groqRes.status}`);
+      throw new Error(`OpenRouter returned ${orRes.status}`);
     }
 
-    const groqData = (await groqRes.json()) as {
+    const orData = (await orRes.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
     };
-    const roastText = groqData.choices?.[0]?.message?.content ?? "...";
+    const roastText = orData.choices?.[0]?.message?.content ?? "...";
 
     res.json({
       roast: roastText,
